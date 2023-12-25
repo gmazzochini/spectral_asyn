@@ -12,8 +12,8 @@ ievi_2001_2018 <- matrix(c(3.228700, 3.564800, 3.537150, 3.708675, 3.845050, 4.3
 # Define a function to calculate the resistance and recovery of EVI during and after a drought year.
 drought_response <- function(rain_data, evi_data){
   
-  # Initialize a data frame to hold the resistance and recovery values.
-  response_df <- data.frame(resistance = NA,recovery = NA)
+  # Initialize a matrix to hold the resistance and recovery values.
+  response_df <- matrix(NA, nrow = nrow(rain_data), ncol = 2, dimnames = list(1:nrow(rain_data), c("resistance", "recovery")))
   
   for(i in 1:nrow(rain_data)){
     # Scale the logarithm of the rainfall data.
@@ -34,10 +34,11 @@ drought_response <- function(rain_data, evi_data){
     # Fit a generalized least squares (GLS) model with an autoregressive correlation structure.
     m <- gls(y ~ x, correlation = corAR1(form = ~1), data = d1[-dry_years,])
     
-    # Calculate and return resistance and recovery.
+    # Calculate resistance and recovery.
     # Resistance: Mean difference between observed EVI in drought years and the model's prediction.
-    # Recovery: Mean difference between observed EVI in the year following drought and the model's prediction.
     response_df[i, "resistance"] <- mean(y[dry_years] - predict(m,d1[dry_years,]),na.rm = T)
+    
+    # Recovery: Mean difference between observed EVI in the year following drought and the model's prediction.
     response_df[i, "recovery"] <- mean(y[dry_years+1] - predict(m,d1[dry_years+1,]),na.rm = T)
   }
   return(response_df)
