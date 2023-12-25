@@ -11,29 +11,35 @@ ievi_2001_2018 <- matrix(c(3.228700, 3.564800, 3.537150, 3.708675, 3.845050, 4.3
 
 # Define a function to calculate the resistance and recovery of EVI during and after a drought year.
 drought_response <- function(rain_data, evi_data){
-  # Scale the logarithm of the rainfall data.
-  rainfall_scaled <- scale(log(rain_data[i,]))
   
-  # Identify drought years as those with scaled rainfall values less than -1.5.
-  dry_years <- which(rainfall_scaled[colnames(evi_data),] < -1.5)
+  response_df <- data.frame(resistance = NA,recovery = NA)
   
-  # Scale the EVI data and convert it to a vector.
-  y <- as.vector(scale(evi_data[i,]))
-  
-  # Scale the logarithm of the rainfall data for EVI data years and convert it to a vector.
-  x <- as.vector(scale(log(rain_data[i,colnames(evi_data)])))
-  
-  # Create a dataframe for modeling.
-  d1 <- data.frame(x,y)
-  
-  # Fit a generalized least squares (GLS) model with an autoregressive correlation structure.
-  m <- gls(y ~ x, correlation = corAR1(form = ~1), data = d1[-dry_years,])
-  
-  # Calculate and return resistance and recovery.
-  # Resistance: Mean difference between observed EVI in drought years and the model's prediction.
-  # Recovery: Mean difference between observed EVI in the year following drought and the model's prediction.
-  return(data.frame(resistance = mean(y[dry_years] - predict(mR2,d1[dry_years,]),na.rm = T),
-                    recovery = mean(y[dry_years+1] - predict(mR2,d1[dry_years+1,]),na.rm = T)))
+  for(i in 1:nrow(rain_data)){
+    # Scale the logarithm of the rainfall data.
+    rainfall_scaled <- scale(log(rain_data[i,]))
+    
+    # Identify drought years as those with scaled rainfall values less than -1.5.
+    dry_years <- which(rainfall_scaled[colnames(evi_data),] < -1.5)
+    
+    # Scale the EVI data and convert it to a vector.
+    y <- as.vector(scale(evi_data[i,]))
+    
+    # Scale the logarithm of the rainfall data for EVI data years and convert it to a vector.
+    x <- as.vector(scale(log(rain_data[i,colnames(evi_data)])))
+    
+    # Create a dataframe for modeling.
+    d1 <- data.frame(x,y)
+    
+    # Fit a generalized least squares (GLS) model with an autoregressive correlation structure.
+    m <- gls(y ~ x, correlation = corAR1(form = ~1), data = d1[-dry_years,])
+    
+    # Calculate and return resistance and recovery.
+    # Resistance: Mean difference between observed EVI in drought years and the model's prediction.
+    # Recovery: Mean difference between observed EVI in the year following drought and the model's prediction.
+    response_df[i, "resistance"] <- mean(y[dry_years] - predict(m,d1[dry_years,]),na.rm = T)
+    response_df[i, "recovery"] <- mean(y[dry_years+1] - predict(m,d1[dry_years+1,]),na.rm = T)
+  }
+  return(response_df)
 }
 
 # Execute the drought response function with rainfall and EVI data.
